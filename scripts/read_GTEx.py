@@ -63,8 +63,10 @@ def get_gene_match(file_path, genes, df_new, remove_data):
     ### Search DataFrame with list of gene names
     ### Return a new DataFrame with selected genes
     # Retrieve source name, turn list into string
-    source_name = re.findall('v8_(.*).gct', file_path)[0]
-    df_match = gene_search(df_raw, genes, source_name, remove_data=remove_data)
+    source_name = re.findall('v8_(.*).gct', file_path)\
+                                    [0].replace('_', ' ')
+    df_match = gene_search(df_raw, genes, source_name,
+                           remove_data=remove_data)
     print(f'{df_match.shape} df_match')
     # append to df_new
     df_new = pd.concat([df_new, df_match], axis=0, join='outer')
