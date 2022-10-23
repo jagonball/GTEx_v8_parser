@@ -4,6 +4,7 @@ Generate plot
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 def main():
     ### Read file
@@ -12,7 +13,7 @@ def main():
     #print(df.head())
     ### The target gene names
     genes = ['CCDC158', 'BCAS3', 'MKL1', 'DLG1']
-    gene = 'CCDC158'
+    gene = 'DLG1'
 
     # Set plot style
     plt.style.use('ggplot')
@@ -27,19 +28,41 @@ def main():
 #        # Transpose df for boxplot input
 #        df_plot = df_plot.set_index('Source')
 #        df_plot = df_plot.iloc[:, 4:].T
-#        #print(df_plot.head())
-#        df_plot = df_plot.drop(columns='testis')
+#        print(df_plot.head())
+#        #df_plot = df_plot.drop(columns='testis')
 #        boxplot(df_plot, gene)
 
     ### Filter df with gene and tissue
-    df_plot = tissue_filter(df, gene, tissue='kidney cortex')
-    # Transpose df for boxplot input
-    df_plot = df_plot.set_index('Source')
-    df_plot = df_plot.iloc[:, 4:]
-    print(df_plot.head())
+    for gene in genes:
+        tissue = 'kidney cortex'
+        other_tissue = 'whole blood'
+        df_plot = tissue_filter(df, gene, tissue=tissue, savefile=True)
+        if gene == 'CCDC158':
+            df_plot = df_plot[df_plot['Source'] != 'testis']
+        # Turn rows into arrays for boxplot
+        arrays = tissue_array(df_plot, tissue, other=other_tissue)
+
+        boxplot(arrays, gene, tissue=tissue, other=other_tissue)
+#    fig, ax1 = plt.subplots()#figsize=(10, 4.5))
+#    fig.subplots_adjust(left=0.075, right=0.95, top=0.9, bottom=0.25)
+#    sns.boxplot(data=df_plot,
+#                x='kidney cortex')
+#    plt.tight_layout() ### Rescale the fig size to fit the data
+#    plt.show()
 
 
-def boxplot(df, gene):
+#    df_test = pd.DataFrame({"A": [1, 2], "B": [3, 4]})
+#    print(df_test)
+#    print(df_test.to_numpy())
+
+#    N = 20
+#    norm = np.random.normal(1, 1, N)
+#    print(norm)
+#    expo = np.random.exponential(1, N)
+#    print(expo)
+#    print(np.concatenate((norm, expo)))
+
+def boxplot(df, gene, tissue='all', other='others'):
     fig, ax1 = plt.subplots(figsize=(10, 4.5))
     #fig.canvas.manager.set_window_title('A Boxplot Example')
     fig.subplots_adjust(left=0.075, right=0.95, top=0.9, bottom=0.25)
@@ -73,7 +96,12 @@ def boxplot(df, gene):
             ylabel='gene TPM')
     
     # Set the axes labels
-    plt.xticks(fontsize=8, rotation=45, ha='right', rotation_mode='anchor')
+    if tissue == 'all':
+        plt.xticks(fontsize=8, rotation=45, ha='right', rotation_mode='anchor')
+    else:
+        plt.xticks(fontsize=8)
+        x_labels = [tissue, other]
+        ax1.set_xticklabels(x_labels)
 #    num_boxes = len(df.columns)
 #    ax1.set_xlim(0.5, num_boxes + 0.5)
     #top = 40
@@ -83,7 +111,7 @@ def boxplot(df, gene):
     #ax1.set_xticklabels(df.columns,
     #                    rotation=45, fontsize=8)
     plt.tight_layout() ### Rescale the fig size to fit the data
-    plt.savefig(f'./analysis/boxplot_{gene}.png')
+    plt.savefig(f'.//analysis//plot//boxplot_{gene}_{tissue}_{other}.png')
     plt.show()
     
 
@@ -98,7 +126,7 @@ def bar_chart(df, gene):
     plt.show()
 
 
-def tissue_filter(df, gene, tissue='all'):
+def tissue_filter(df, gene, tissue='all', savefile=True):
     ### Filter df with gene and tissue
     # Subset DataFrame to gene for plot drawing
     df_plot = df[df['Description'] == gene]
@@ -110,16 +138,44 @@ def tissue_filter(df, gene, tissue='all'):
         col_to_keep = df_plot.columns[col_bool]
         df_plot = df_plot.loc[:, col_to_keep]
         #print(f'{df_plot.shape} df_plot')
-        # Add new column 'boxplot' for different category
-        df_plot.insert(loc = 5, column = 'boxplot', value = 'others')
-        tissue_index = df_plot.index[df_plot['Source'] == tissue].tolist()
-        # Replace the target tissue value
-        df_plot.at[tissue_index[0], 'boxplot'] = tissue
-    else:
-        pass
-    df_plot.to_csv(f'.//analysis//plot_data//df_plot_{gene}_{tissue}.txt', sep='\t', index=False)
+#        # Add new column 'boxplot' for different category
+#        df_plot.insert(loc = 5, column = 'boxplot', value = 'others')
+#        # Get the target tissue index then replace the boxplot value
+#        tissue_index = df_plot.index[df_plot['Source'] == tissue].tolist()
+#        df_plot.at[tissue_index[0], 'boxplot'] = tissue
+    if savefile:
+        df_plot.to_csv(f'.//analysis//plot_data//df_plot_{gene}_{tissue}.txt',
+                        sep='\t', index=False)
     return df_plot
 
+
+def tissue_array(df, tissue, other='all'):
+        ## Target tissue ##
+        # Filter df with tissue on column 'Source'
+        df_temp = df[df['Source'] == tissue]
+        #print(df_temp)
+        array_1 = df_temp.iloc[:, 4:].to_numpy(copy=True)
+        #print(array_1)
+        ## Other tissues ##
+        if other == 'all':
+            df_temp = df[df['Source'] != tissue]
+        else:
+            df_temp = df[df['Source'] == other]
+        #print(df_temp)
+        df_temp = df_temp.iloc[:, 4:]
+        # Create a list for other tissues, turn into an array later.
+        array_2 = []
+        # Iterate over rows with Index and Series
+        for i, s in df_temp.iterrows():
+            # Save series to temporary list
+            list_temp = s.dropna().to_list()
+            #print(list_temp)
+            array_2 += list_temp
+        array_2 = np.array(array_2)
+        #print(array_2)
+        # Create a list of arrays
+        arrays = [array_1, array_2]
+        return arrays
 
 
 if __name__ == '__main__':
