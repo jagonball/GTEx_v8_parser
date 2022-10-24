@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 from scipy.stats import ttest_ind
+import os
+import re
 
 def main():
     ### Read file
@@ -13,7 +15,7 @@ def main():
     df = pd.read_csv(file_path, sep='\t', header=0)
     #print(df.head())
     ### The target gene names
-    genes = ['CCDC158', 'BCAS3', 'MKL1', 'DLG1']
+    genes = ['CCDC158', 'BCAS3', 'MKL1', 'DLG1']#['TBX2']
     # Set plot style
     plt.style.use('ggplot')
     #sns.set_theme(style="ticks")
@@ -35,9 +37,10 @@ def main():
 #            df_plot = df_plot.drop(columns='testis')
 #        boxplot(df_plot, gene, remove_0=remove_0)
 
-#    ### Filter df with gene and tissue ###
+#    ### Perform target tissue versus other tissue ###
+#    # Filter df with gene and tissue
 #    for gene in genes:
-#        tissue = 'kidney medulla'
+#        tissue = 'kidney cortex'
 #        other_tissue = 'whole blood'
 #        df_plot = tissue_filter(df, gene, tissue=tissue, 
 #                                savefile=True, remove_0=remove_0)
@@ -61,60 +64,95 @@ def main():
 #                p_value=p_value, remove_0=remove_0)
 
 
-    ### Perform t-test between target tissue against all other tissues
-    for gene in genes:
-        tissue = 'kidney cortex'
-        # Create lists for new data
-        sample_size = []
-        statistic = []
-        p_value = []
-        # Subset DataFrame to gene
-        df_gene = df[df['Description'] == gene]
-        #print(f'{df_gene.shape} df_gene')
-        # Target tissue array
-        array_1 = tissue_array(df_gene, tissue)
-        # Remove nan
-        array_1 = array_1[~np.isnan(array_1)]
-        print(array_1)
-        # Get other tissue array then perform t-test
-        df_gene_other = df_gene[df_gene['Source'] != tissue]
-        for other_tissue in df_gene_other['Source']:
-            array_2 = tissue_array(df_gene_other, other_tissue)
-            # Remove nan
-            array_2 = array_2[~np.isnan(array_2)]
-            # Print array size
-            print(f'array_1: {array_1.shape}')
-            print(f'array_2: {array_2.shape}')
-            # Add to list sample_size
-            sample_size.append(array_2.shape[0])
-            # Perform t-test
-            t_test_result = t_test(array_1, array_2)
-            # Add results to lists statistic and p_value
-            statistic.append(t_test_result[0])
-            p_value.append(t_test_result[1])
-        # Subset df_gee_other for t-test output
-        df_ttest = df_gene_other.iloc[:, 0:4]
-        #print(len(sample_size))
-        #print(len(statistic))
-        #print(len(p_value))
-        df_ttest['Sample_size'] = sample_size
-        df_ttest['Statistic'] = statistic
-        df_ttest['P_value'] = p_value
-        df_ttest.to_csv(f'.//analysis//t_test/df_ttest_{gene}_{tissue}.txt',
+#    ### Perform t-test between target tissue against all other tissues
+#    for gene in genes:
+#        tissue = 'kidney medulla'
+#        # Create lists for new data
+#        sample_size = []
+#        statistic = []
+#        p_value = []
+#        # Subset DataFrame to gene
+#        df_gene = df[df['Description'] == gene]
+#        #print(f'{df_gene.shape} df_gene')
+#        df_gene = df_gene.reset_index(drop=True)
+#        # Target tissue index
+#        index_target_tissue = df_gene[df_gene['Source'] == tissue].index
+#        #print(index_target_tissue[0])
+#        # Target tissue row
+#        row_target_tissue = df_gene[df_gene['Source'] == tissue].iloc[:, 0:4]
+#        #print(row_target_tissue)
+#        # Target tissue array
+#        array_1 = tissue_array(df_gene, tissue)
+#        # Remove nan
+#        array_1 = array_1[~np.isnan(array_1)]
+#        #print(array_1)
+#        # Get other tissue array then perform t-test
+#        df_gene_other = df_gene[df_gene['Source'] != tissue]
+#        for other_tissue in df_gene_other['Source']:
+#            array_2 = tissue_array(df_gene_other, other_tissue)
+#            # Remove nan
+#            array_2 = array_2[~np.isnan(array_2)]
+#            # Print array size
+#            print(f'array_1: {array_1.shape}')
+#            print(f'array_2: {array_2.shape}')
+#            # Add to list sample_size
+#            sample_size.append(array_2.shape[0])
+#            # Perform t-test
+#            t_test_result = t_test(array_1, array_2)
+#            # Add results to lists statistic and p_value
+#            statistic.append(t_test_result[0])
+#            p_value.append(t_test_result[1])
+#        # Subset df_gene_other for t-test output
+#        df_ttest = df_gene_other.iloc[:, 0:4]
+#        #print(len(sample_size))
+#        #print(len(statistic))
+#        #print(len(p_value))
+#        df_ttest['Sample_size'] = sample_size
+#        df_ttest['Statistic'] = statistic
+#        df_ttest['P_value'] = p_value
+#        # Add target tissue row into output
+#        row_target_tissue['Sample_size'] = array_1.shape[0]
+#        df_ttest = pd.concat([df_ttest, row_target_tissue])
+#        df_ttest = df_ttest.sort_index()
+#        df_ttest.to_csv(f'.//analysis//t_test/df_ttest_{gene}_{tissue}.txt',
+#                        sep='\t', index=False)
+
+#    ### Heatmap ###
+#    # Create a DataFrame to store p-values
+#    df_pvalue = pd.DataFrame()
+#    # File list of t-test output
+#    file_list = os.listdir('.//analysis//t_test//')
+#    # Loop over each file
+#    for file in file_list:
+#        print(f'Current file: {file}')
+#        df_pvalue = combine_pvalue(file, df_pvalue)
+#        print(f'{df_pvalue.shape} df_pvalue')
+#    # Remove index name
+#    df_pvalue.index.name = None
+#    # Save to file
+#    df_pvalue.to_csv(f'.//analysis//df_pvalue.txt',
+#                        sep='\t', index=True)
+#    heatmap(df_pvalue)
+        
+    ### Histogram ###
+    file_path = './/data//gene_tpm//gene_tpm_2017-06-05_v8_kidney_medulla.gct'
+    df_hist = file_importer(file_path)
+    #print(df_hist.head())
+    # Remove 0
+    df_hist.iloc[:, 3:] = df_hist.iloc[:, 3:].replace(0, np.nan)
+    # Add median column
+    df_hist.insert(loc = 3, column = 'Median', value = df_hist.iloc[:, 3:].median(axis=1))
+    print(df_hist.shape)
+    # Remove rows with no value
+    df_hist = df_hist[df_hist['Median'].notna()]
+    df_hist.insert(loc=4, column = 'Median_log10', value = np.log10(df_hist['Median']))
+    print(df_hist.shape)
+    # Save to file
+    df_hist.to_csv(f'.//analysis//df_hist.txt',
                         sep='\t', index=False)
-        
-        
-#    ### Histogram ###
-#    file_path = './/data//gene_tpm//gene_tpm_2017-06-05_v8_kidney_medulla.gct'
-#    df = file_importer(file_path)
-#    #print(df.head())
-#    fig, ax1 = plt.subplots()
-#    df_rm0 = df.iloc[:, 3:].replace(0, np.nan)
-#    df_log = np.log10(df_rm0)
-#    #print(df_log.head())
-#    # Generate histogram for each column
-#    for column in df_log.columns:
-#        histogram(df_log, column)
+    # Generate histogram for column
+    column = 'Median_log10'
+    histogram(df_hist, column)
 
 
 
@@ -310,8 +348,50 @@ def file_importer(file_path):
     return df
 
 
+def combine_pvalue(file, df_pvalue):
+    ### Read file into DataFrame df
+    file_path = f'.//analysis//t_test//{file}'
+    df = pd.read_csv(file_path, sep='\t', header=0)
+    #print(df.head())
+    # Set index to 'Source' then get Series 'P_value'
+    df = df.set_index('Source')
+    series = df['P_value']
+    # Rename series based on file name
+    source_name = re.findall('ttest_(.*).txt', file)[0]
+    series =series.rename(source_name)
+    # Add series to df_pvalue as new column
+    df_pvalue[source_name] = series
+    return df_pvalue
+
+
+def heatmap(df):
+    fig, ax1 = plt.subplots()
+    fig.set_figwidth(7.5)
+    fig.set_figheight(10)
+    sns.heatmap(df,
+                vmin=0,
+                vmax=0.1,
+                cmap='coolwarm',
+                center=0.05,
+                cbar=True,
+                cbar_kws={'shrink':0.4,
+                          'label':'p value'},
+                linewidths=0.01,
+                linecolor='grey',
+                xticklabels=True,
+                yticklabels=True
+                )
+    plt.xticks(fontsize=10, rotation=45, ha="right",
+               rotation_mode="anchor")
+    plt.yticks(fontsize=9)
+    fig.tight_layout() ### Rescale the fig size to fit the data
+    plt.savefig(f'.//analysis//plot//heatmap.png')
+    plt.show()
+
+
 def histogram(df, x):
-    sns.histplot(df, x=x)
+    fig, ax1 = plt.subplots()
+    sns.histplot(df, x=x, ax=ax1)
     plt.tight_layout() ### Rescale the fig size to fit the data
     plt.show()
 

@@ -9,8 +9,8 @@ import re
 
 def main():
     ### The target gene names
-    genes = ['CCDC158', 'BCAS3', 'MKL1', 'DLG1']
-    # Create df_new to store matched rows
+    genes = ['CCDC158', 'BCAS3', 'MKL1', 'DLG1']#['TBX2']
+    # Create a DataFrame to store matched rows
     df_new = pd.DataFrame()
     ### Save GTEx Analysis file names into a list
     file_list = os.listdir('.//data//gene_tpm//')
@@ -40,7 +40,7 @@ def file_importer(file_path):
 
 def gene_search(df, genes, source, remove_data = False):
     df_match = df.query(f'Description == {genes}')
-    # Add source information
+    # Add source and average column
     df_match.insert(loc = 3, column = 'Source', value = source)
     df_match.insert(loc = 4, column = 'Average', value = df_match.iloc[:, 5:].mean(axis=1))
     if remove_data == True:
