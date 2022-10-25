@@ -8,6 +8,7 @@ import numpy as np
 from scipy.stats import ttest_ind
 import os
 import re
+#from statannot import add_stat_annotation
 
 def main():
     ### Read file
@@ -15,14 +16,15 @@ def main():
     df = pd.read_csv(file_path, sep='\t', header=0)
     #print(df.head())
     ### The target gene names
-    genes = ['CCDC158', 'BCAS3', 'MKL1', 'DLG1']#['TBX2']
+    genes = ['CCDC158', 'MKL1', 'DLG1', 'BCAS3', 'TBX2']
+    remove_0 = True
     # Set plot style
     plt.style.use('ggplot')
     #sns.set_theme(style="ticks")
-    # Bar chart
+    ### Bar chart ###
 #    bar_chart(df_plot, gene)
+    
 
-    remove_0 = False
 #    ### Generate boxplot for each gene in genes ###
 #    ### compared to all other tissues
 #    for gene in genes:
@@ -37,31 +39,51 @@ def main():
 #            df_plot = df_plot.drop(columns='testis')
 #        boxplot(df_plot, gene, remove_0=remove_0)
 
-#    ### Perform target tissue versus other tissue ###
+
+#    ### Perform target tissue versus other tissue and generate boxplot ###
+#    ### Now with 2 target tissues
 #    # Filter df with gene and tissue
 #    for gene in genes:
 #        tissue = 'kidney cortex'
+#        tissue_2 = 'kidney medulla'
 #        other_tissue = 'whole blood'
-#        df_plot = tissue_filter(df, gene, tissue=tissue, 
-#                                savefile=True, remove_0=remove_0)
+#        ### DataFrame for gene
+#        # Subset DataFrame to gene
+#        df_plot = df[df['Description'] == gene]
+#        # Remove 0
+#        if remove_0:
+#            df_plot = df_plot.replace(0, np.nan)
 #        # Remove outlier data
 #        if gene == 'CCDC158':
 #            df_plot = df_plot[df_plot['Source'] != 'testis']
-#        # Turn rows into arrays for boxplot
-#        array_1, array_2 = tissue_arrays_for_ttest(df_plot, tissue)#, other=other_tissue)
+#        # Save to file
+#        df_plot.to_csv(f'.//analysis//filtered_data//df_plot_{gene}_{tissue}.txt',
+#                        sep='\t', index=False)
+#        # Tissue and tissue_2 rows into arrays for boxplot
+#        array_1, array_other, array_2 = tissue_arrays_for_ttest(df_plot, tissue,
+#                                                   tissue_2=tissue_2,
+#                                                   other=other_tissue,
+#                                                   dropna=True)
 #        # Print array size
 #        print(f'array_1: {array_1.shape}')
+#        print(f'array_other: {array_other.shape}')
 #        print(f'array_2: {array_2.shape}')
 #        # Perform t-test
-#        t_test_result = t_test(array_1, array_2)
+#        t_test_result = t_test(array_1, array_other)
 #        p_value = t_test_result[1]
 #        p_value = '{:.3g}'.format(p_value)
 #        print(p_value)
+#        t_test_result_2 = t_test(array_2, array_other)
+#        p_value_2 = t_test_result_2[1]
+#        p_value_2 = '{:.3g}'.format(p_value_2)
+#        print(p_value_2)
 #        # Create a list of arrays
-#        arrays = [array_1, array_2]
+#        arrays = [array_1, array_other, array_2]
+#        # Custom boxplot color
+#        #box_color = ['red', 'g', 'blue', 'g']
 #        # Generate boxplot
-#        boxplot(arrays, gene, tissue=tissue, #other=other_tissue,
-#                p_value=p_value, remove_0=remove_0)
+#        boxplot(arrays, gene, tissue=tissue, other=other_tissue, tissue_2=tissue_2,
+#                p_value=p_value, p_value_2=p_value_2, remove_0=remove_0)
 
 
 #    ### Perform t-test between target tissue against all other tissues
@@ -117,104 +139,93 @@ def main():
 #        df_ttest.to_csv(f'.//analysis//t_test/df_ttest_{gene}_{tissue}.txt',
 #                        sep='\t', index=False)
 
-#    ### Heatmap ###
-#    # Create a DataFrame to store p-values
-#    df_pvalue = pd.DataFrame()
-#    # File list of t-test output
-#    file_list = os.listdir('.//analysis//t_test//')
-#    # Loop over each file
-#    for file in file_list:
-#        print(f'Current file: {file}')
-#        df_pvalue = combine_pvalue(file, df_pvalue)
-#        print(f'{df_pvalue.shape} df_pvalue')
-#    # Remove index name
-#    df_pvalue.index.name = None
-#    # Save to file
-#    df_pvalue.to_csv(f'.//analysis//df_pvalue.txt',
-#                        sep='\t', index=True)
-#    heatmap(df_pvalue)
-        
-    ### Histogram ###
-    file_path = './/data//gene_tpm//gene_tpm_2017-06-05_v8_kidney_medulla.gct'
-    df_hist = file_importer(file_path)
-    #print(df_hist.head())
-    # Remove 0
-    df_hist.iloc[:, 3:] = df_hist.iloc[:, 3:].replace(0, np.nan)
-    # Add median column
-    df_hist.insert(loc = 3, column = 'Median', value = df_hist.iloc[:, 3:].median(axis=1))
-    print(df_hist.shape)
-    # Remove rows with no value
-    df_hist = df_hist[df_hist['Median'].notna()]
-    df_hist.insert(loc=4, column = 'Median_log10', value = np.log10(df_hist['Median']))
-    print(df_hist.shape)
+
+    ### Heatmap ###
+    # Create a DataFrame to store p-values
+    df_pvalue = pd.DataFrame()
+    # File list of t-test output
+    file_list = os.listdir('.//analysis//t_test//')
+    # Loop over each file
+    for file in file_list:
+        print(f'Current file: {file}')
+        df_pvalue = combine_pvalue(file, df_pvalue)
+        print(f'{df_pvalue.shape} df_pvalue')
+    # Remove index name
+    df_pvalue.index.name = None
     # Save to file
-    df_hist.to_csv(f'.//analysis//df_hist.txt',
-                        sep='\t', index=False)
-    # Generate histogram for column
-    column = 'Median_log10'
-    histogram(df_hist, column)
+    df_pvalue.to_csv(f'.//analysis//df_pvalue.txt',
+                        sep='\t', index=True)
+    heatmap(df_pvalue, annotate=True)
+
+
+#    ### Histogram ###
+#    file_path = './/data//gene_tpm//gene_tpm_2017-06-05_v8_kidney_cortex.gct'
+#    df_hist = file_importer(file_path)
+#    #print(df_hist.head())
+#    # Remove 0
+#    df_hist.iloc[:, 3:] = df_hist.iloc[:, 3:].replace(0, np.nan)
+#    # Add median column
+#    df_hist.insert(loc = 3, column = 'Median', value = df_hist.iloc[:, 3:].median(axis=1))
+#    print(df_hist.shape)
+#    # Remove rows with no value
+#    df_hist = df_hist[df_hist['Median'].notna()]
+#    df_hist.insert(loc=4, column = 'Median_log10', value = np.log10(df_hist['Median']))
+#    print(df_hist.shape)
+#    # Save to file
+#    df_hist.to_csv(f'.//analysis//df_hist.txt',
+#                        sep='\t', index=False)
+#    # Retrieve target gene values and save into a dictionary
+#    gene_value = {}
+#    for gene in genes:
+#        value = df_hist[df_hist['Description'] == gene]['Median_log10']
+#        gene_value[gene] = value.values[0]
+#    print(gene_value)
+#    # Generate histogram for column
+#    column = 'Median_log10'
+#    histogram(df_hist, column)
 
 
 
-def boxplot(df, gene, tissue='all', other='others',
-            p_value=None, remove_0=False):
+def boxplot(df, gene, tissue='all', other='others', tissue_2=None,
+            p_value=None, p_value_2=None, remove_0=False, palette=None):
     ### Rule for figsize ###
     if tissue == 'all':
         fig, ax1 = plt.subplots(figsize=(10, 5))
     else:
-        fig, ax1 = plt.subplots(figsize=(6, 5))
-    #fig.canvas.manager.set_window_title('A Boxplot Example')
+        fig, ax1 = plt.subplots(figsize=(6, 4))
     fig.subplots_adjust(left=0.075, right=0.95, top=0.9, bottom=0.25)
-    sns.boxplot(data=df,
-                width=0.8,
-                fliersize=1,
-                linewidth=0.5,
-                ax=ax1)
-
-    ## Add in points to show each observation
-    #sns.stripplot(data=df,
-    #              size=1,
-    #              color=".3",
-    #              linewidth=0)
-
-    #bp= df.boxplot(ax=ax1,
-    #               fontsize=8,
-    #               rot=45)
-    #bp = ax1.boxplot(df, notch=False, sym='+', vert=True, whis=1.5)
-    #plt.setp(bp['boxes'], color='black')
-    #plt.setp(bp['whiskers'], color='black')
-    #plt.setp(bp['fliers'], color='red', marker='+')
-
-    # Add a horizontal grid to the plot, but make it very light in color
-    # so we can use it for reading data values but not be distracting
-#    ax1.yaxis.grid(True, linestyle='-', which='major', color='lightgrey',
-#                   alpha=0.5)
-    ax1.set(#axisbelow=True,  # Hide the grid behind plot objects
-            title=f'{gene}',
-            xlabel=None,
-            ylabel='gene TPM')
-    
+    sns.boxplot(data = df,
+                width = 0.3,
+                palette = palette,
+                fliersize = 2,
+                linewidth = 0.5,
+                ax = ax1)
+    ax1.set_title(gene,
+                  fontsize = 16,
+                  fontweight = 'bold')
     # Set the axes labels
     if tissue == 'all':
         plt.xticks(fontsize=8, rotation=45, ha='right', rotation_mode='anchor')
     else:
-        plt.xticks(fontsize=12)
-        x_labels = [tissue, other]
+        plt.xticks(fontsize=16)
+        x_labels = [tissue, other, tissue_2]
         ax1.set_xticklabels(x_labels)
+    ax1.set_ylabel('gene TPM',
+                   fontsize = 14)
+                   #fontweight = 'bold')
     # Annotate p_value
     if p_value:
-        ax1.annotate(text = f'p value: {p_value}',
-                     xy = (0.75, 1.02),
+        bbox = dict(boxstyle ="round", fc ="0.8")
+        ax1.annotate(text = f'      p value\nkc.wb. {p_value}\nkm.wb. {p_value_2}',
+                     xy = (0.76, 0.82),
                      xycoords = 'axes fraction',
-                     fontstyle = 'italic')
-#    num_boxes = len(df.columns)
-#    ax1.set_xlim(0.5, num_boxes + 0.5)
-    #top = 40
-    #bottom = -5
-    #ax1.set_ylim(bottom, top)
-    #ax1.set_xticks(range(num_boxes), labels=df.columns, rotation=45, fontsize=8)
-    #ax1.set_xticklabels(df.columns,
-    #                    rotation=45, fontsize=8)
+                     fontstyle = 'italic',
+                     bbox = bbox)
+    #    ax1.annotate(text = f'p value\n{p_value_2}',
+    #                 xy = (0.60, -0.15),
+    #                 xycoords = 'axes fraction',
+    #                 fontstyle = 'italic',
+    #                 alpha = 0.5)
     plt.tight_layout() ### Rescale the fig size to fit the data
     ### Rule for file name ###
     if tissue == 'all':
@@ -222,6 +233,11 @@ def boxplot(df, gene, tissue='all', other='others',
             plt.savefig(f'.//analysis//plot//boxplot_{gene}_{tissue}_rm0.png')
         else:
             plt.savefig(f'.//analysis//plot//boxplot_{gene}_{tissue}.png')
+    elif tissue_2:
+        if remove_0:
+            plt.savefig(f'.//analysis//plot//boxplot_{gene}_{tissue}&{tissue_2}_{other}_rm0.png')
+        else:
+            plt.savefig(f'.//analysis//plot//boxplot_{gene}_{tissue}&{tissue_2}_{other}.png')
     else:
         if remove_0:
             plt.savefig(f'.//analysis//plot//boxplot_{gene}_{tissue}_{other}_rm0.png')
@@ -289,15 +305,23 @@ def tissue_array(df, tissue):
     return array
 
 
-def tissue_arrays_for_ttest(df, tissue, other='all'):
+def tissue_arrays_for_ttest(df, tissue, tissue_2=None,
+                            other='all', dropna=False):
     ## Target tissue ##
     array_1 = tissue_array(df, tissue)
+    if tissue_2:
+        array_2 = tissue_array(df, tissue_2)
     ## Other tissues ##
     if other == 'all':
-        array_2 = multiple_tissues_array(df, tissue)
+        array_other = multiple_tissues_array(df, tissue)
     else:
-        array_2 = tissue_array(df, other)
-    return array_1, array_2
+        array_other = tissue_array(df, other)
+    if dropna:
+        # Remove nan
+        array_1 = array_1[~np.isnan(array_1)]
+        array_2 = array_2[~np.isnan(array_2)]
+        array_other = array_other[~np.isnan(array_other)]
+    return array_1, array_other, array_2
 
 
 def multiple_tissues_array(df, tissue):
@@ -364,10 +388,10 @@ def combine_pvalue(file, df_pvalue):
     return df_pvalue
 
 
-def heatmap(df):
+def heatmap(df, annotate=False):
     fig, ax1 = plt.subplots()
-    fig.set_figwidth(7.5)
-    fig.set_figheight(10)
+    fig.set_figwidth(10)
+    fig.set_figheight(15)
     sns.heatmap(df,
                 vmin=0,
                 vmax=0.1,
@@ -379,13 +403,26 @@ def heatmap(df):
                 linewidths=0.01,
                 linecolor='grey',
                 xticklabels=True,
-                yticklabels=True
+                yticklabels=True,
+                ax=ax1
                 )
-    plt.xticks(fontsize=10, rotation=45, ha="right",
+    plt.xticks(fontsize=12, rotation=45, ha="right",
                rotation_mode="anchor")
-    plt.yticks(fontsize=9)
-    fig.tight_layout() ### Rescale the fig size to fit the data
-    plt.savefig(f'.//analysis//plot//heatmap.png')
+    plt.yticks(fontsize=10)
+    # Annotate p-values
+    if annotate:
+        # Loop over data dimensions and create text annotations.
+        for y in range(df.shape[0]):
+            for x in range(df.shape[1]):
+                plt.text(x + 0.5, y + 0.5, '{:.3g}'.format(df.iloc[y, x]),
+                         horizontalalignment='center',
+                         verticalalignment='center',
+                         color="w")
+        fig.tight_layout() ### Rescale the fig size to fit the data
+        plt.savefig(f'.//analysis//plot//heatmap_annotate.png')
+    else:
+        fig.tight_layout() ### Rescale the fig size to fit the data
+        plt.savefig(f'.//analysis//plot//heatmap.png')
     plt.show()
 
 

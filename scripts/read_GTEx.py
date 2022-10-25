@@ -9,7 +9,7 @@ import re
 
 def main():
     ### The target gene names
-    genes = ['CCDC158', 'BCAS3', 'MKL1', 'DLG1']#['TBX2']
+    genes = ['CCDC158', 'MKL1', 'DLG1', 'BCAS3', 'TBX2']
     # Create a DataFrame to store matched rows
     df_new = pd.DataFrame()
     ### Save GTEx Analysis file names into a list
