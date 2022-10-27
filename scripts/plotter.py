@@ -40,52 +40,52 @@ def main():
 #        boxplot(df_plot, gene, remove_0=remove_0)
 
 
-    ### Perform target tissue versus other tissue and generate boxplot ###
-    ### Now with 2 target tissues
-    # Filter df with gene and tissue
-    for gene in genes:
-        tissue = 'kidney cortex'
-        tissue_2 = 'kidney medulla'
-        other_tissue = 'whole blood'
-        ### DataFrame for gene
-        # Subset DataFrame to gene
-        df_plot = df[df['Description'] == gene]
-        # Remove 0
-        if remove_0:
-            df_plot = df_plot.replace(0, np.nan)
-        # Remove outlier data
-        if gene == 'CCDC158':
-            df_plot = df_plot[df_plot['Source'] != 'testis']
-        # Save to file
-        df_plot.to_csv(f'.//analysis//filtered_data//df_plot_{gene}_{tissue}.txt',
-                        sep='\t', index=False)
-        # Tissue and tissue_2 rows into arrays for boxplot
-        array_1, array_other, array_2 = tissue_arrays_for_ttest(df_plot, tissue,
-                                                   tissue_2=tissue_2,
-                                                   other=other_tissue,
-                                                   dropna=True)
-        # Print array size
-        print(f'array_1: {array_1.shape}')
-        print(f'array_other: {array_other.shape}')
-        print(f'array_2: {array_2.shape}')
-        # Perform t-test
-        t_test_result, ttest_type = t_test(array_1, array_other)
-        p_value = t_test_result[1]
-        p_value = '{:.3g}'.format(p_value)
-        print(p_value)
-        t_test_result_2, ttest_type = t_test(array_2, array_other)
-        p_value_2 = t_test_result_2[1]
-        p_value_2 = '{:.3g}'.format(p_value_2)
-        print(p_value_2)
-        # Create a list of arrays
-        arrays = [array_1, array_other, array_2]
-        # Custom boxplot color
-        #box_color = ['red', 'g', 'blue', 'g']
-        # Generate boxplot
-        boxplot(arrays, gene, tissue=tissue, other=other_tissue, tissue_2=tissue_2,
-                p_value=p_value, p_value_2=p_value_2, remove_0=remove_0)
-
-
+#    ### Perform target tissue versus other tissue and generate boxplot ###
+#    ### Now with 2 target tissues
+#    # Filter df with gene and tissue
+#    for gene in genes:
+#        tissue = 'kidney cortex'
+#        tissue_2 = 'kidney medulla'
+#        other_tissue = 'whole blood'
+#        ### DataFrame for gene
+#        # Subset DataFrame to gene
+#        df_plot = df[df['Description'] == gene]
+#        # Remove 0
+#        if remove_0:
+#            df_plot = df_plot.replace(0, np.nan)
+#        # Remove outlier data
+#        if gene == 'CCDC158':
+#            df_plot = df_plot[df_plot['Source'] != 'testis']
+#        # Save to file
+#        df_plot.to_csv(f'.//analysis//filtered_data//df_plot_{gene}_{tissue}.txt',
+#                        sep='\t', index=False)
+#        # Tissue and tissue_2 rows into arrays for boxplot
+#        array_1, array_other, array_2 = tissue_arrays_for_ttest(df_plot, tissue,
+#                                                   tissue_2=tissue_2,
+#                                                   other=other_tissue,
+#                                                   dropna=True)
+#        # Print array size
+#        print(f'array_1: {array_1.shape}')
+#        print(f'array_other: {array_other.shape}')
+#        print(f'array_2: {array_2.shape}')
+#        # Perform t-test
+#        t_test_result, ttest_type = t_test(array_1, array_other)
+#        p_value = t_test_result[1]
+#        p_value = '{:.3g}'.format(p_value)
+#        print(p_value)
+#        t_test_result_2, ttest_type = t_test(array_2, array_other)
+#        p_value_2 = t_test_result_2[1]
+#        p_value_2 = '{:.3g}'.format(p_value_2)
+#        print(p_value_2)
+#        # Create a list of arrays
+#        arrays = [array_1, array_other, array_2]
+#        # Custom boxplot color
+#        #box_color = ['red', 'g', 'blue', 'g']
+#        # Generate boxplot
+#        boxplot(arrays, gene, tissue=tissue, other=other_tissue, tissue_2=tissue_2,
+#                p_value=p_value, p_value_2=p_value_2, remove_0=remove_0)
+#
+#
 #    ### Perform t-test between target tissue against all other tissues
 #    tissue = 'kidney cortex'
 #    print(f'Target tissue: {tissue}')
@@ -144,26 +144,26 @@ def main():
 #                        sep='\t', index=False)
 
 
-#    ### Heatmap ###
-#    # Create a DataFrame to store p-values
-#    df_pvalue = pd.DataFrame()
-#    # File list of t-test output
-#    file_list = os.listdir('.//analysis//t_test//')
-#    # Loop over each file
-#    for file in file_list:
-#        print(f'Current file: {file}')
-#        df_pvalue = combine_pvalue(file, df_pvalue)
-#        print(f'{df_pvalue.shape} df_pvalue')
-#    # Remove index name
-#    df_pvalue.index.name = None
-#    #print(df_pvalue.columns)
-#    # Rearrange column for heatmap
-#    df_pvalue = df_pvalue.iloc[:, [0, 8, 2, 6, 4, 1, 9, 3, 7, 5]]
-#    #print(df_pvalue.columns)
-#    # Save to file
-#    df_pvalue.to_csv(f'.//analysis//df_pvalue.txt',
-#                        sep='\t', index=True)
-#    heatmap(df_pvalue, annotate=True)
+    ### Heatmap ###
+    # Create a DataFrame to store p-values
+    df_pvalue = pd.DataFrame()
+    # File list of t-test output
+    file_list = os.listdir('.//analysis//t_test//')
+    # Loop over each file
+    for file in file_list:
+        print(f'Current file: {file}')
+        df_pvalue = combine_pvalue(file, df_pvalue)
+        print(f'{df_pvalue.shape} df_pvalue')
+    # Remove index name
+    df_pvalue.index.name = None
+    #print(df_pvalue.columns)
+    # Rearrange column for heatmap
+    df_pvalue = df_pvalue.iloc[:, [0, 8, 2, 6, 4, 1, 9, 3, 7, 5]]
+    #print(df_pvalue.columns)
+    # Save to file
+    df_pvalue.to_csv(f'.//analysis//df_pvalue.txt',
+                        sep='\t', index=True)
+    heatmap(df_pvalue, annotate=True)
 
 
 #    ### Histogram ###
@@ -400,8 +400,8 @@ def combine_pvalue(file, df_pvalue):
 
 def heatmap(df, annotate=False):
     fig, ax1 = plt.subplots()
-    fig.set_figwidth(11.5)
-    fig.set_figheight(15)
+    fig.set_figwidth(12)
+    fig.set_figheight(16)
     sns.heatmap(df,
                 vmin=0,
                 vmax=0.1,
@@ -410,7 +410,7 @@ def heatmap(df, annotate=False):
                 cbar=True,
                 cbar_kws={'shrink':0.4,
                           'label':'p value'},
-                linewidths=0.01,
+                linewidths=0.5,
                 linecolor='grey',
                 xticklabels=True,
                 yticklabels=True,
@@ -427,7 +427,7 @@ def heatmap(df, annotate=False):
                 plt.text(x + 0.5, y + 0.5, '{:.3g}'.format(df.iloc[y, x]),
                          horizontalalignment='center',
                          verticalalignment='center',
-                         color="w")
+                         color="#afaf00")
         fig.tight_layout() ### Rescale the fig size to fit the data
         plt.savefig(f'.//analysis//plot//heatmap_annotate.png', dpi=900)
     else:
