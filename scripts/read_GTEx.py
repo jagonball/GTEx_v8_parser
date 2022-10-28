@@ -6,6 +6,8 @@ from types import new_class
 import pandas as pd
 import re
 
+__author__ = "Johnathan Lin <jagonball@gmail.com>"
+__email__ = "jagonball@gmail.com"
 
 def main():
     ### The target gene names

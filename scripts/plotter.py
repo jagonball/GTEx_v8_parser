@@ -8,7 +8,9 @@ import numpy as np
 from scipy.stats import ttest_ind
 import os
 import re
-#from statannot import add_stat_annotation
+
+__author__ = "Johnathan Lin <jagonball@gmail.com>"
+__email__ = "jagonball@gmail.com"
 
 def main():
     ### Read file
